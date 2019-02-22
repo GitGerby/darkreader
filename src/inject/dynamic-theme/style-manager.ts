@@ -1,4 +1,4 @@
-import {iterateCSSRules, iterateCSSDeclarations, replaceCSSRelativeURLsWithAbsolute, removeCSSComments, replaceCSSFontFace, replaceCSSVariables, getCSSURLValue, cssImportRegex, getCSSBaseBath} from './css-rules';
+import {iterateCSSRules, iterateCSSDeclarations, getCSSVariables, replaceCSSRelativeURLsWithAbsolute, removeCSSComments, replaceCSSFontFace, replaceCSSVariables, getCSSURLValue, cssImportRegex, getCSSBaseBath} from './css-rules';
 import {getModifiableCSSDeclaration, ModifiableCSSDeclaration, ModifiableCSSRule} from './modify-css';
 import {bgFetch} from './network';
 import {removeNode, watchForNodePosition} from '../utils/dom';
@@ -148,18 +148,6 @@ export function manageStyle(element: HTMLLinkElement | HTMLStyleElement, {update
         return null;
     }
 
-    function getVariables(rules: CSSRuleList) {
-        const variables = new Map<string, string>();
-        rules && iterateCSSRules(rules, (rule) => {
-            rule.style && iterateCSSDeclarations(rule.style, (property, value) => {
-                if (property.startsWith('--')) {
-                    variables.set(property, value);
-                }
-            });
-        });
-        return variables;
-    }
-
     function details() {
         const rules = getRulesSync();
         if (!rules) {
@@ -181,7 +169,7 @@ export function manageStyle(element: HTMLLinkElement | HTMLStyleElement, {update
             });
             return null;
         }
-        const variables = getVariables(rules);
+        const variables = getCSSVariables(rules);
         return {variables};
     }
 
@@ -221,7 +209,7 @@ export function manageStyle(element: HTMLLinkElement | HTMLStyleElement, {update
             // to properly handle composite properties (e.g. background -> background-color)
             let vars: HTMLStyleElement = null;
             let varsRule: CSSStyleRule = null;
-            if (variables.size > 0) {
+            if (variables.size > 0 || cssText.includes('var(')) {
                 const cssTextWithVariables = replaceCSSVariables(cssText, variables);
                 if (rulesTextCache.get(cssText) !== cssTextWithVariables) {
                     rulesTextCache.set(cssText, cssTextWithVariables);
